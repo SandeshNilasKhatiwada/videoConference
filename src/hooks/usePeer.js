@@ -7,17 +7,19 @@ export const usePeer = () => {
   const [callStarted, setCallStarted] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
 
   const peerInstance = useRef(null);
   const callInstance = useRef(null);
 
-  // Initialize Peer on mount
+  // Initialize Peer
   useEffect(() => {
     const peer = new Peer({
       config: {
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
-          // Add TURN here if needed (e.g., from Xirsys)
+          // Add TURN here if needed
         ],
       },
     });
@@ -27,9 +29,8 @@ export const usePeer = () => {
       console.log("Your Peer ID:", id);
     });
 
-    // Handle incoming calls
     peer.on("call", (call) => {
-      // If we already have a stream, answer immediately
+      // If localStream exists, answer immediately
       if (localStream) {
         call.answer(localStream);
         call.on("stream", (remote) => {
@@ -38,7 +39,7 @@ export const usePeer = () => {
         });
         callInstance.current = call;
       } else {
-        // Otherwise get the stream first
+        // Else get media first
         navigator.mediaDevices
           .getUserMedia({ video: true, audio: true })
           .then((stream) => {
@@ -60,7 +61,7 @@ export const usePeer = () => {
       if (callInstance.current) callInstance.current.close();
       peer.destroy();
     };
-  }, []); // only run once
+  }, []); // Only once
 
   // Get local media (for the caller)
   const getLocalMedia = useCallback(() => {
@@ -73,7 +74,7 @@ export const usePeer = () => {
       .catch((err) => console.error("Media error:", err));
   }, []);
 
-  // Start a call to a remote peer
+  // Start a call
   const startCall = useCallback(async () => {
     if (!remoteId.trim()) {
       alert("Please enter a remote Peer ID");
@@ -98,7 +99,7 @@ export const usePeer = () => {
     }
   }, [remoteId, localStream, getLocalMedia]);
 
-  // End the call and clean up
+  // End call
   const endCall = useCallback(() => {
     if (callInstance.current) {
       callInstance.current.close();
@@ -110,6 +111,30 @@ export const usePeer = () => {
     }
     setRemoteStream(null);
     setCallStarted(false);
+    setIsAudioMuted(false);
+    setIsVideoOff(false);
+  }, [localStream]);
+
+  // Toggle audio
+  const toggleAudio = useCallback(() => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioMuted(!audioTrack.enabled);
+      }
+    }
+  }, [localStream]);
+
+  // Toggle video
+  const toggleVideo = useCallback(() => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoOff(!videoTrack.enabled);
+      }
+    }
   }, [localStream]);
 
   return {
@@ -119,8 +144,12 @@ export const usePeer = () => {
     callStarted,
     localStream,
     remoteStream,
+    isAudioMuted,
+    isVideoOff,
     startCall,
     endCall,
+    toggleAudio,
+    toggleVideo,
     getLocalMedia,
   };
 };

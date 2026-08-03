@@ -1,0 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap");
+
+@layer base {
+  body {
+    @apply bg-dark text-white font-sans antialiased;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #1a1a2e;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #6c63ff;
+    border-radius: 8px;
+  }
+}
